@@ -11,6 +11,7 @@ import {
     MuiChat,
 } from "chat-ui-react";
 import React from "react";
+import * as Rooms from "./room";
 
 const muiTheme = createTheme({
     palette: {
@@ -19,6 +20,17 @@ const muiTheme = createTheme({
         },
     },
 });
+
+export type Items = "lighter" | "meat" | "coin" | "magic soil" | "shears";
+
+const visitedRooms = new Set<Rooms.Room>();
+let currentRoom: Rooms.Room;
+const inventory = new Set<Items>();
+
+function initializeRooms(): void {
+    const room1 = new Rooms.Room1();
+    currentRoom = room1;
+}
 
 function App(): React.ReactElement {
     const [chatCtl] = React.useState(
@@ -129,7 +141,7 @@ async function echo(chatCtl: ChatController): Promise<void> {
 async function lookAround(chatCtl: ChatController): Promise<void> {
     await chatCtl.addMessage({
         type: "text",
-        content: `Not implemented yet!`,
+        content: currentRoom.description(),
         self: false,
         avatar: "-",
     });
@@ -145,7 +157,7 @@ async function pickUp(chatCtl: ChatController, item_name: string): Promise<void>
 }
 
 async function restartGame(chatCtl: ChatController): Promise<void> {
-    // TODO: reset game variables
+    initializeRooms();
     await chatCtl.addMessage({
         type: "text",
         content: `Welcome to Andrew's birthday game!`,
