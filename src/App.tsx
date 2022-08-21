@@ -29,6 +29,9 @@ const inventory = new Set<Items>();
 
 function initializeRooms(): void {
     const room1 = new Rooms.Room1();
+    const room2 = new Rooms.Room2();
+    room1.east = room2;
+    room2.west = room1;
     currentRoom = room1;
 }
 
@@ -84,17 +87,8 @@ async function echo(chatCtl: ChatController): Promise<void> {
             self: false,
             avatar: "-",
         });
-    } else if (text.value.startsWith("go to ")) {
-
-    } else if (text.value.startsWith("go to")) {
-        await chatCtl.addMessage({
-            type: "text",
-            content: `Correct usage: go to <room>`,
-            self: false,
-            avatar: "-",
-        });
     } else if (text.value.startsWith("go ")) {
-
+        goTo(chatCtl, text.value.slice(3));
     } else if (text.value.startsWith("go")) {
         await chatCtl.addMessage({
             type: "text",
@@ -156,6 +150,101 @@ async function pickUp(chatCtl: ChatController, item_name: string): Promise<void>
     });
 }
 
+async function goTo(chatCtl: ChatController, direction: string): Promise<void> {
+    const direction_sane = direction.trim().toLowerCase();
+    if (["north", "east", "south", "west"].includes(direction_sane)) {
+        if ((direction_sane === "north" && currentRoom.north != null)
+        || (direction_sane === "east" && currentRoom.east != null)
+        || (direction_sane === "south" && currentRoom.south != null)
+        || (direction_sane === "west" && currentRoom.west != null)) {
+            switch (direction_sane) {
+                case "north": {
+                    await chatCtl.addMessage({
+                        type: "text",
+                        content: `You walk to the room to the north.`,
+                        self: false,
+                        avatar: "-",
+                    });
+                    if (currentRoom.north) currentRoom = currentRoom.north;
+                    break;
+                }
+                case "east": {
+                    await chatCtl.addMessage({
+                        type: "text",
+                        content: `You walk to the room to the east.`,
+                        self: false,
+                        avatar: "-",
+                    });
+                    if (currentRoom.east) currentRoom = currentRoom.east;
+                    break;
+                }
+                case "south": {
+                    await chatCtl.addMessage({
+                        type: "text",
+                        content: `You walk to the room to the south.`,
+                        self: false,
+                        avatar: "-",
+                    });
+                    if (currentRoom.south) currentRoom = currentRoom.south;
+                    break;
+                }
+                case "west": {
+                    await chatCtl.addMessage({
+                        type: "text",
+                        content: `You walk to the room to the west.`,
+                        self: false,
+                        avatar: "-",
+                    });
+                    if (currentRoom.west) currentRoom = currentRoom.west;
+                    break;
+                }
+            }
+        } else {
+            const valid_directions: string[] = [];
+            if (currentRoom.north != null) valid_directions.push("north");
+            if (currentRoom.east != null) valid_directions.push("east");
+            if (currentRoom.south != null) valid_directions.push("south");
+            if (currentRoom.west != null) valid_directions.push("west");
+            let message = `You cannot go ${direction_sane} from this room. Try going `;
+            switch (valid_directions.length) {
+                case 0: {
+                    console.log("wtf. the current room has no connected rooms!!");
+                    break;
+                }
+                case 1: {
+                    message += valid_directions[0] + ".";
+                    break;
+                }
+                case 2: {
+                    message += valid_directions[0] + " or " + valid_directions[1] + ".";
+                    break;
+                }
+                case 3: {
+                    message += valid_directions[0] + ", " + valid_directions[1] + ", or " + valid_directions[2];
+                    break;
+                }
+                case 4: {
+                    message += valid_directions[0] + ", " + valid_directions[1] + ", " + valid_directions[2] + ", or " + valid_directions[3];
+                    break;
+                }
+            }
+            await chatCtl.addMessage({
+                type: "text",
+                content: message,
+                self: false,
+                avatar: "-",
+            });
+        }
+    } else {
+        await chatCtl.addMessage({
+            type: "text",
+            content: `${direction_sane} is not a valid direction. Try "north", "east", "south", or "west".`,
+            self: false,
+            avatar: "-",
+        });
+    }
+}
+
 async function restartGame(chatCtl: ChatController): Promise<void> {
     initializeRooms();
     await chatCtl.addMessage({
@@ -174,7 +263,6 @@ async function helpPrompt(chatCtl: ChatController): Promise<void> {
         content: `"look": Describes surroundings.
 "pick up <item>": Picks up item, if allowed.
 "go <direction>": Moves that direction, if allowed.
-"go to <room>": Go back to a room you have visited.
 "inventory": Tells you what you're holding.
 "drop <item>": Drops item on floor.
 "restart": Restarts game from beginning.
