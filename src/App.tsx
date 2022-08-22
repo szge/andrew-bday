@@ -6,10 +6,7 @@ import {
     createTheme,
 } from "@mui/material";
 // https://www.npmjs.com/package/chat-ui-react
-import {
-    ChatController,
-    MuiChat,
-} from "chat-ui-react";
+import { ChatController, MuiChat } from "chat-ui-react";
 import React from "react";
 import * as Rooms from "./room";
 
@@ -21,24 +18,37 @@ const muiTheme = createTheme({
     },
 });
 
-export type Items = "lighter" | "meat" | "coin" | "magic soil" | "shears";
+export type Items = "lighter" | "meat" | "coin" | "fertilizer" | "shears";
 
-const visitedRooms = new Set<Rooms.Room>();
 let currentRoom: Rooms.Room;
 const inventory = new Set<Items>();
 
 function initializeRooms(): void {
     const room1 = new Rooms.Room1();
     const room2 = new Rooms.Room2();
+    const room3 = new Rooms.Room3();
+    const room4 = new Rooms.Room4();
+    const room5 = new Rooms.Room5();
+    const room6 = new Rooms.Room6();
     room1.east = room2;
     room2.west = room1;
-    currentRoom = room1;
+    room2.east = room3;
+    room3.west = room2;
+    room1.south = room4;
+    room4.north = room1;
+    room4.east = room5;
+    room5.west = room4;
+    room2.south = room5;
+    room5.north = room2;
+    room5.east = room6;
+    room6.west = room5;
+    room3.south = room6;
+    room6.north = room3;
+    currentRoom = room5;
 }
 
 function App(): React.ReactElement {
-    const [chatCtl] = React.useState(
-        new ChatController({})
-    );
+    const [chatCtl] = React.useState(new ChatController({}));
 
     React.useMemo(() => {
         restartGame(chatCtl);
@@ -96,21 +106,12 @@ async function echo(chatCtl: ChatController): Promise<void> {
             self: false,
             avatar: "-",
         });
+    } else if (text.value === "chat" || text.value === "talk") {
+        talk(chatCtl);
     } else if (text.value === "inventory") {
-
-    } else if (text.value.startsWith("drop ")) {
-
-    } else if (text.value.startsWith("drop")) {
-        await chatCtl.addMessage({
-            type: "text",
-            content: `Correct usage: drop <item>`,
-            self: false,
-            avatar: "-",
-        });
     } else if (text.value === "restart") {
         restartGame(chatCtl);
     } else if (text.value.startsWith("use ")) {
-
     } else if (text.value.startsWith("use")) {
         await chatCtl.addMessage({
             type: "text",
@@ -141,7 +142,10 @@ async function lookAround(chatCtl: ChatController): Promise<void> {
     });
 }
 
-async function pickUp(chatCtl: ChatController, item_name: string): Promise<void> {
+async function pickUp(
+    chatCtl: ChatController,
+    item_name: string
+): Promise<void> {
     await chatCtl.addMessage({
         type: "text",
         content: `trying to pick up ${item_name}, to be implemented`,
@@ -153,10 +157,12 @@ async function pickUp(chatCtl: ChatController, item_name: string): Promise<void>
 async function goTo(chatCtl: ChatController, direction: string): Promise<void> {
     const direction_sane = direction.trim().toLowerCase();
     if (["north", "east", "south", "west"].includes(direction_sane)) {
-        if ((direction_sane === "north" && currentRoom.north != null)
-        || (direction_sane === "east" && currentRoom.east != null)
-        || (direction_sane === "south" && currentRoom.south != null)
-        || (direction_sane === "west" && currentRoom.west != null)) {
+        if (
+            (direction_sane === "north" && currentRoom.north != null) ||
+            (direction_sane === "east" && currentRoom.east != null) ||
+            (direction_sane === "south" && currentRoom.south != null) ||
+            (direction_sane === "west" && currentRoom.west != null)
+        ) {
             switch (direction_sane) {
                 case "north": {
                     await chatCtl.addMessage({
@@ -208,7 +214,9 @@ async function goTo(chatCtl: ChatController, direction: string): Promise<void> {
             let message = `You cannot go ${direction_sane} from this room. Try going `;
             switch (valid_directions.length) {
                 case 0: {
-                    console.log("wtf. the current room has no connected rooms!!");
+                    console.log(
+                        "wtf. the current room has no connected rooms!!"
+                    );
                     break;
                 }
                 case 1: {
@@ -216,15 +224,31 @@ async function goTo(chatCtl: ChatController, direction: string): Promise<void> {
                     break;
                 }
                 case 2: {
-                    message += valid_directions[0] + " or " + valid_directions[1] + ".";
+                    message +=
+                        valid_directions[0] +
+                        " or " +
+                        valid_directions[1] +
+                        ".";
                     break;
                 }
                 case 3: {
-                    message += valid_directions[0] + ", " + valid_directions[1] + ", or " + valid_directions[2];
+                    message +=
+                        valid_directions[0] +
+                        ", " +
+                        valid_directions[1] +
+                        ", or " +
+                        valid_directions[2];
                     break;
                 }
                 case 4: {
-                    message += valid_directions[0] + ", " + valid_directions[1] + ", " + valid_directions[2] + ", or " + valid_directions[3];
+                    message +=
+                        valid_directions[0] +
+                        ", " +
+                        valid_directions[1] +
+                        ", " +
+                        valid_directions[2] +
+                        ", or " +
+                        valid_directions[3];
                     break;
                 }
             }
@@ -254,7 +278,24 @@ async function restartGame(chatCtl: ChatController): Promise<void> {
         avatar: "-",
     });
     helpPrompt(chatCtl);
+    await chatCtl.addMessage({
+        type: "text",
+        content: `After getting too drunk on ale at the local tavern celebrating your birthday last night, you wake up from your slumber and find yourself in a torch-lit square room.
+        
+There are pieces of hay strewn about the floor and there is a mild animal odour in the air, similar to a barn. The walls, floor, and ceiling are all built from stones and seem fairly solid.`,
+        self: false,
+        avatar: "-",
+    });
     echo(chatCtl);
+}
+
+async function talk(chatCtl: ChatController): Promise<void> {
+    await chatCtl.addMessage({
+        type: "text",
+        content: currentRoom.talk(),
+        self: false,
+        avatar: "-",
+    });
 }
 
 async function helpPrompt(chatCtl: ChatController): Promise<void> {
@@ -263,8 +304,8 @@ async function helpPrompt(chatCtl: ChatController): Promise<void> {
         content: `"look": Describes surroundings.
 "pick up <item>": Picks up item, if allowed.
 "go <direction>": Moves that direction, if allowed.
+"chat": Talk to the thing in the room.
 "inventory": Tells you what you're holding.
-"drop <item>": Drops item on floor.
 "restart": Restarts game from beginning.
 "use <item>": Uses an item you have.
 "help me": Displays this message.`,
