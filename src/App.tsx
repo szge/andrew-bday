@@ -162,7 +162,11 @@ async function solve(chatCtl: ChatController, value: string) {
         if (value === "2282022") {
             await chatCtl.addMessage({
                 type: "text",
-                content: `🎉Congrats🎉 You solved the puzzle! 22-8-2022 is Andrew's birthday. Happy birthday Andrew! Feel free to type "restart" to play again.`,
+                content: `On the chest's lock, you carefully dial in the numbers one by one. When you dial in the final "2", you hear a dramatic "click" sound, and the top of the chest cracks open.
+
+You open the chest, and you discover that the only thing in its contents is a note scribbled on a torn page. It reads:
+                
+🎉Congrats🎉 You solved the puzzle! 22-8-2022 is Andrew's birthday. Happy birthday Andrew! Feel free to type "restart" to play again.`,
                 self: false,
                 avatar: "-",
             });
