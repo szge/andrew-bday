@@ -18,10 +18,14 @@ const muiTheme = createTheme({
     },
 });
 
-export type Items = "lighter" | "meat" | "coin" | "fertilizer" | "shears";
+export type Items = "lighter" | "meat" | "coin" | "fertilizer" | "shears" | "shovel";
+const ItemsTypeArray = ["lighter", "meat", "coin", "fertilizer", "shears", "shovel"];
+function checkItemsType(value: string): value is Items {
+    return ItemsTypeArray.includes(value);
+}
 
 let currentRoom: Rooms.Room;
-const inventory = new Set<Items>();
+export const inventory = new Set<Items>();
 
 function initializeRooms(): void {
     const room1 = new Rooms.Room1();
@@ -30,6 +34,8 @@ function initializeRooms(): void {
     const room4 = new Rooms.Room4();
     const room5 = new Rooms.Room5();
     const room6 = new Rooms.Room6();
+    const room7 = new Rooms.Room7();
+    const room8 = new Rooms.Room8();
     room1.east = room2;
     room2.west = room1;
     room2.east = room3;
@@ -44,6 +50,12 @@ function initializeRooms(): void {
     room6.west = room5;
     room3.south = room6;
     room6.north = room3;
+    room5.south = room7;
+    room7.north = room5;
+    room7.east = room8;
+    room8.west = room7;
+    room6.south = room8;
+    room8.north = room6;
     currentRoom = room5;
 }
 
@@ -109,9 +121,11 @@ async function echo(chatCtl: ChatController): Promise<void> {
     } else if (text.value === "chat" || text.value === "talk") {
         talk(chatCtl);
     } else if (text.value === "inventory") {
+        printInventory(chatCtl);
     } else if (text.value === "restart") {
         restartGame(chatCtl);
     } else if (text.value.startsWith("use ")) {
+        roomUse(chatCtl, text.value.slice(4));
     } else if (text.value.startsWith("use")) {
         await chatCtl.addMessage({
             type: "text",
@@ -121,6 +135,17 @@ async function echo(chatCtl: ChatController): Promise<void> {
         });
     } else if (text.value.startsWith("help")) {
         helpPrompt(chatCtl);
+    } else if (text.value.startsWith("solve ")) {
+        solve(chatCtl, text.value.slice(6));
+    } else if (text.value.startsWith("solve")) {
+        await chatCtl.addMessage({
+            type: "text",
+            content: `Correct usage: solve <value>`,
+            self: false,
+            avatar: "-",
+        });
+    } else if (text.value.startsWith("hint")) {
+        hint(chatCtl);
     } else {
         await chatCtl.addMessage({
             type: "text",
@@ -133,25 +158,89 @@ async function echo(chatCtl: ChatController): Promise<void> {
     echo(chatCtl);
 }
 
+async function solve(chatCtl: ChatController, value: string) {
+    if (currentRoom instanceof Rooms.Room5) {
+        if (value === "2282022") {
+            await chatCtl.addMessage({
+                type: "text",
+                content: `🎉Congrats🎉 You solved the puzzle! 22-8-2022 is Andrew's birthday. Happy birthday Andrew! Feel free to type "restart" to play again.`,
+                self: false,
+                avatar: "-",
+            });
+        } else {
+            await chatCtl.addMessage({
+                type: "text",
+                content: `That is not the correct code.`,
+                self: false,
+                avatar: "-",
+            });
+        }
+    } else {
+        await chatCtl.addMessage({
+            type: "text",
+            content: `You are not in the correct room for unlocking the chest.`,
+            self: false,
+            avatar: "-",
+        });
+    }
+}
+
+async function roomUse(chatCtl: ChatController, item: string) {
+    const item_sane = item.trim().toLowerCase();
+    if (checkItemsType(item_sane) && inventory.has(item_sane)) {
+        currentRoom.use(chatCtl, item_sane);
+    } else {
+        await chatCtl.addMessage({
+            type: "text",
+            content: `You do not have ${item_sane} in your inventory. Use the inventory command to list your available items.`,
+            self: false,
+            avatar: "-",
+        });
+    }
+}
+
+async function printInventory(chatCtl: ChatController) {
+    if (inventory.size === 0) {
+        await chatCtl.addMessage({
+            type: "text",
+            content: `You have nothing in your inventory.`,
+            self: false,
+            avatar: "-",
+        });
+    } else {
+        let message = `You have the following items in your inventory: `;
+        inventory.forEach((item) => {
+            message += item + ", ";
+        })
+        message = message.slice(0, -2); // remove the last comma
+        await chatCtl.addMessage({
+            type: "text",
+            content: message,
+            self: false,
+            avatar: "-",
+        });
+    }
+}
+
 async function lookAround(chatCtl: ChatController): Promise<void> {
-    await chatCtl.addMessage({
-        type: "text",
-        content: currentRoom.description(),
-        self: false,
-        avatar: "-",
-    });
+    currentRoom.description(chatCtl);
 }
 
 async function pickUp(
     chatCtl: ChatController,
-    item_name: string
+    item: string
 ): Promise<void> {
-    await chatCtl.addMessage({
-        type: "text",
-        content: `trying to pick up ${item_name}, to be implemented`,
-        self: false,
-        avatar: "-",
-    });
+    const item_sane = item.trim().toLowerCase();
+    if (checkItemsType(item_sane)) {
+        currentRoom.pickUp(chatCtl, item_sane);
+    } else {
+        await chatCtl.addMessage({
+            type: "text",
+            content: `There is no item called ${item_sane} in the room.`,
+            self: false,
+            avatar: "-",
+        });
+    }
 }
 
 async function goTo(chatCtl: ChatController, direction: string): Promise<void> {
@@ -271,6 +360,7 @@ async function goTo(chatCtl: ChatController, direction: string): Promise<void> {
 
 async function restartGame(chatCtl: ChatController): Promise<void> {
     initializeRooms();
+    inventory.clear();
     await chatCtl.addMessage({
         type: "text",
         content: `Welcome to Andrew's birthday game!`,
@@ -290,12 +380,53 @@ There are pieces of hay strewn about the floor and there is a mild animal odour 
 }
 
 async function talk(chatCtl: ChatController): Promise<void> {
-    await chatCtl.addMessage({
-        type: "text",
-        content: currentRoom.talk(),
-        self: false,
-        avatar: "-",
-    });
+    currentRoom.talk(chatCtl);
+}
+
+async function hint(chatCtl: ChatController) {
+    function randomIntFromInterval(min: number, max: number) {
+        // min and max included 
+        return Math.floor(Math.random() * (max - min + 1) + min)
+    }
+    const randInt = randomIntFromInterval(0, 3);
+    switch (randInt) {
+        case 0: {
+            await chatCtl.addMessage({
+                type: "text",
+                content: `The letter associated with each room probably has something to do with something in the room.`,
+                self: false,
+                avatar: "-",
+            });
+            break;
+        }
+        case 1: {
+            await chatCtl.addMessage({
+                type: "text",
+                content: `The grid pattern on the chest looks awfully familiar...`,
+                self: false,
+                avatar: "-",
+            });
+            break;
+        }
+        case 2: {
+            await chatCtl.addMessage({
+                type: "text",
+                content: `Have you tried talking to everything?`,
+                self: false,
+                avatar: "-",
+            });
+            break;
+        }
+        case 3: {
+            await chatCtl.addMessage({
+                type: "text",
+                content: `Look at your inventory to see what items could be useful.`,
+                self: false,
+                avatar: "-",
+            });
+            break;
+        }
+    }
 }
 
 async function helpPrompt(chatCtl: ChatController): Promise<void> {
@@ -308,7 +439,9 @@ async function helpPrompt(chatCtl: ChatController): Promise<void> {
 "inventory": Tells you what you're holding.
 "restart": Restarts game from beginning.
 "use <item>": Uses an item you have.
-"help me": Displays this message.`,
+"help me": Displays this message.
+"solve <value>": when in the chest room, attempt to solve the puzzle.
+"hint": get a randomized, vaguely helpful hint.`,
         self: false,
         avatar: "-",
     });
