@@ -388,45 +388,36 @@ async function hint(chatCtl: ChatController) {
         // min and max included 
         return Math.floor(Math.random() * (max - min + 1) + min)
     }
-    const randInt = randomIntFromInterval(0, 3);
+    const randInt = randomIntFromInterval(0, 4);
+    let message = "";
     switch (randInt) {
         case 0: {
-            await chatCtl.addMessage({
-                type: "text",
-                content: `The letter associated with each room probably has something to do with something in the room.`,
-                self: false,
-                avatar: "-",
-            });
+            message = `The letter associated with each room probably has something to do with something in the room.`;
             break;
         }
         case 1: {
-            await chatCtl.addMessage({
-                type: "text",
-                content: `The grid pattern on the chest looks awfully familiar...`,
-                self: false,
-                avatar: "-",
-            });
+            message = `The grid pattern on the chest looks awfully familiar...`;
             break;
         }
         case 2: {
-            await chatCtl.addMessage({
-                type: "text",
-                content: `Have you tried talking to everything?`,
-                self: false,
-                avatar: "-",
-            });
+            message = `Have you tried talking to everything?`;
             break;
         }
         case 3: {
-            await chatCtl.addMessage({
-                type: "text",
-                content: `Look at your inventory to see what items could be useful.`,
-                self: false,
-                avatar: "-",
-            });
+            message = `Look at your inventory to see what items could be useful.`;
+            break;
+        }
+        case 4: {
+            message = `Look at your inventory to see what items could be useful.`;
             break;
         }
     }
+    await chatCtl.addMessage({
+        type: "text",
+        content: message,
+        self: false,
+        avatar: "-",
+    });
 }
 
 async function helpPrompt(chatCtl: ChatController): Promise<void> {
