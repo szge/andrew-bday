@@ -1,7 +1,6 @@
 import {
     Box,
     CssBaseline,
-    Divider,
     ThemeProvider,
     createTheme,
 } from "@mui/material";
@@ -60,7 +59,7 @@ function initializeRooms(): void {
 }
 
 function App(): React.ReactElement {
-    const [chatCtl] = React.useState(new ChatController({}));
+    const [chatCtl] = React.useState(new ChatController());
 
     React.useMemo(() => {
         restartGame(chatCtl);
@@ -81,10 +80,7 @@ function App(): React.ReactElement {
                         bgcolor: "background.default",
                     }}
                 >
-                    <Divider />
-                    <Box sx={{ flex: "1 1 0%", minHeight: 0 }}>
-                        <MuiChat chatController={chatCtl} />
-                    </Box>
+                    <MuiChat chatController={chatCtl} />
                 </Box>
             </Box>
         </ThemeProvider>
@@ -95,56 +91,57 @@ function App(): React.ReactElement {
 async function echo(chatCtl: ChatController): Promise<void> {
     const text = await chatCtl.setActionRequest({
         type: "text",
-        placeholder: "Please enter something",
+        placeholder: "Please enter something"
     });
 
-    if (text.value.startsWith("look")) {
+    const text_sane = text.value.trim().toLowerCase();
+    if (text_sane.startsWith("look")) {
         lookAround(chatCtl);
-    } else if (text.value.startsWith("pick up ")) {
-        pickUp(chatCtl, text.value.slice(8));
-    } else if (text.value.startsWith("pick up")) {
+    } else if (text_sane.startsWith("pick up ")) {
+        pickUp(chatCtl, text_sane.slice(8));
+    } else if (text_sane.startsWith("pick up")) {
         await chatCtl.addMessage({
             type: "text",
             content: `Correct usage: pick up <item>`,
             self: false,
             avatar: "-",
         });
-    } else if (text.value.startsWith("go ")) {
-        goTo(chatCtl, text.value.slice(3));
-    } else if (text.value.startsWith("go")) {
+    } else if (text_sane.startsWith("go ")) {
+        goTo(chatCtl, text_sane.slice(3));
+    } else if (text_sane.startsWith("go")) {
         await chatCtl.addMessage({
             type: "text",
             content: `Correct usage: go <direction>`,
             self: false,
             avatar: "-",
         });
-    } else if (text.value === "chat" || text.value === "talk") {
+    } else if (text_sane === "chat" || text_sane === "talk") {
         talk(chatCtl);
-    } else if (text.value === "inventory") {
+    } else if (text_sane === "inventory") {
         printInventory(chatCtl);
-    } else if (text.value === "restart") {
+    } else if (text_sane === "restart") {
         restartGame(chatCtl);
-    } else if (text.value.startsWith("use ")) {
-        roomUse(chatCtl, text.value.slice(4));
-    } else if (text.value.startsWith("use")) {
+    } else if (text_sane.startsWith("use ")) {
+        roomUse(chatCtl, text_sane.slice(4));
+    } else if (text_sane.startsWith("use")) {
         await chatCtl.addMessage({
             type: "text",
             content: `Correct usage: use <item>`,
             self: false,
             avatar: "-",
         });
-    } else if (text.value.startsWith("help")) {
+    } else if (text_sane.startsWith("help")) {
         helpPrompt(chatCtl);
-    } else if (text.value.startsWith("solve ")) {
-        solve(chatCtl, text.value.slice(6));
-    } else if (text.value.startsWith("solve")) {
+    } else if (text_sane.startsWith("solve ")) {
+        solve(chatCtl, text_sane.slice(6));
+    } else if (text_sane.startsWith("solve")) {
         await chatCtl.addMessage({
             type: "text",
             content: `Correct usage: solve <value>`,
             self: false,
             avatar: "-",
         });
-    } else if (text.value.startsWith("hint")) {
+    } else if (text_sane.startsWith("hint")) {
         hint(chatCtl);
     } else {
         await chatCtl.addMessage({
@@ -154,6 +151,8 @@ async function echo(chatCtl: ChatController): Promise<void> {
             avatar: "-",
         });
     }
+
+    await new Promise(r => setTimeout(r, 500));
 
     echo(chatCtl);
 }
@@ -408,7 +407,7 @@ async function hint(chatCtl: ChatController) {
             break;
         }
         case 4: {
-            message = `Look at your inventory to see what items could be useful.`;
+            message = `The letters in the rooms could maybe form some sort of word... maybe a `;
             break;
         }
     }
